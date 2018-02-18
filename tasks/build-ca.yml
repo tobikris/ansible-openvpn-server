@@ -1,0 +1,37 @@
+- name: Build ca
+  expect:
+    command: ../easyrsa/easyrsa build-ca
+    responses:
+      phrase: "{{ combined_instance.pki.ca_password }}"
+      Common: "{{ combined_instance.name }} CA"
+  args:
+    chdir: "/etc/openvpn/{{ combined_instance.dir }}/"
+    creates: "/etc/openvpn/{{ combined_instance.dir }}/pki/private/ca.key"
+  tags: openvpn,init,config
+
+- name: Request server cert
+  expect:
+    command: "../easyrsa/easyrsa gen-req {{ combined_instance.dir }} nopass"
+    responses:
+      Common: "{{ combined_instance.name }} VPN Server"
+  args:
+    chdir: "/etc/openvpn/{{ combined_instance.dir }}/"
+    creates: "/etc/openvpn/{{ combined_instance.dir }}/pki/private/{{ combined_instance.dir }}.key"
+  tags: openvpn,init,config
+
+- name: Sign server request
+  expect:
+    command: "../easyrsa/easyrsa sign-req server {{ combined_instance.dir }}"
+    responses:
+      phrase: "{{ combined_instance.pki.ca_password }}"
+      Confirm: "yes"
+  args:
+    chdir: "/etc/openvpn/{{ combined_instance.dir }}/"
+    creates: "/etc/openvpn/{{ combined_instance.dir }}/pki/issued/{{ combined_instance.dir }}.crt"
+  tags: openvpn,serverclient
+
+- name: Generate dh.pem
+  command: "../easyrsa/easyrsa gen-dh"
+  args:
+    chdir: "/etc/openvpn/{{ combined_instance.dir }}/"
+    creates: "/etc/openvpn/{{ combined_instance.dir }}/pki/dh.pem"

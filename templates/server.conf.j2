@@ -1,0 +1,64 @@
+# {{ template_ansible_managed }}
+
+port                {{ combined_instance.port }}
+server              {{ combined_instance.ipv4 }} {{ combined_instance.netmask4 }}
+{% if combined_instance.ipv6 is defined and combined_instance.ipv6 != "" %}
+server-ipv6         {{ combined_instance.ipv6 }}{{ combined_instance.netmask6 }}
+{% endif %}
+proto               {{ combined_instance.protocol }}
+dev                 {{ combined_instance.interface }}
+topology            {{ combined_instance.topology }}
+
+ca                  {{ combined_instance.dir }}/pki/ca.crt
+cert                {{ combined_instance.dir }}/pki/issued/server.crt
+key                 {{ combined_instance.dir }}/pki/private/server.key
+dh                  {{ combined_instance.dir }}/pki/dh.pem
+
+{% if combined_instance.client_config is defined and combined_instance.client_config != "" %}
+client-config-dir   {{ combined_instance.dir }}/{{ combined_instance.client_config }}
+{% endif %}
+{% if combined_instance.route4 is defined and combined_instance.route4 != "" %}
+route               {{ combined_instance.route4 }}
+{% endif %}
+{% for entry in combined_instance.push.routes %}
+push                "route {{ entry }}"
+{% endfor %}
+{% if combined_instance.route6 is defined and combined_instance.route6 != "" %}
+route-ipv6          {{ combined_instance.route6 }}
+{% endif %}
+
+{% if combined_instance.push.redirect_gateway is defined and combined_instance.push.redirect_gateway %}
+push                "redirect-gateway def1 bypass-dhcp"
+{% endif %}
+{% if combined_instance.push.dns is defined and combined_instance.push.dns != "" %}
+push                "dhcp-option DNS {{ combined_instance.push.dns }}"
+{% endif %}
+
+{% if combined_instance.client_to_client %}
+client-to-client
+{% endif %}
+
+keepalive           {{ combined_instance.keepalive.ping }} {{ combined_instance.keepalive.ping_restart }}
+
+cipher              {{ combined_instance.cipher }}
+tls-cipher          {{ combined_instance.tls.cipher }}
+tls-version-min     {{ combined_instance.tls.version_min }}
+remote-cert-tls     {{ combined_instance.tls.remote_cert }}
+
+comp-lzo
+
+user                {{ combined_instance.user }}
+group               {{ combined_instance.group }}
+{% if combined_instance.persist_key %}
+persist-key
+{% endif %}
+{% if combined_instance.persist_tun %}
+persist-tun
+{% endif %}
+
+status              {{ (combined_instance.status is defined and combined_instance.status != "") | ternary(combined_instance.status, combined_instance.dir~"/openvpn-status.log") }}
+log                 {{ (combined_instance.log is defined and combined_instance.log != "") | ternary(combined_instance.log, combined_instance.dir~"/openvpn.log") }}
+verb                {{ combined_instance.verbosity }}
+{% if combined_instance.management_telnet_port is defined and combined_instance.management_telnet_port != "" %}
+management          localhost 45678
+{% endif %}

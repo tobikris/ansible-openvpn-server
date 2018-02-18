@@ -1,0 +1,42 @@
+- name: "[{{ client.cn }}@{{ combined_instance.name }}] Combine client with defaults"
+  set_fact:
+    combined_client: "{{ openvpn_server_client_defaults | combine(combined_instance.client_defaults, recursive=true) | combine(client, recursive=true) }}"
+
+- name: "[{{ combined_client.cn }}@{{ combined_instance.name }}] Generate signing request"
+  expect:
+    command: "../easyrsa/easyrsa gen-req {{ combined_client.cn }} nopass"
+    responses:
+      Common: "{{ combined_client.cn }}"
+  args:
+    chdir: "/etc/openvpn/{{ combined_instance.dir }}/"
+    creates: "/etc/openvpn/{{ combined_instance.dir }}/pki/reqs/{{ combined_client.cn }}.req"
+  tags: openvpn,serverclient
+
+- name: "[{{ combined_client.cn }}@{{ combined_instance.name }}] Sign request"
+  expect:
+    command: "../easyrsa/easyrsa sign-req client {{ combined_client.cn }}"
+    responses:
+      phrase: "{{ combined_instance.pki.ca_password }}"
+      Confirm: "yes"
+  args:
+    chdir: "/etc/openvpn/{{ combined_instance.dir }}/"
+    creates: "/etc/openvpn/{{ combined_instance.dir }}/pki/issued/{{ combined_client.cn }}.crt"
+  tags: openvpn,serverclient
+
+- slurp:
+    src: /etc/openvpn/{{ combined_instance.dir }}/pki/issued/{{ combined_client.cn }}.crt
+  register: combined_client_cert
+
+- slurp:
+    src: /etc/openvpn/{{ combined_instance.dir }}/pki/private/{{ combined_client.cn }}.key
+  register: combined_client_key
+
+- name: "[{{ combined_client.cn }}@{{ combined_instance.name }}] Build client.ovpn"
+  template:
+    src: client.ovpn.j2
+    dest: "/etc/openvpn/{{ combined_instance.dir }}/{{ combined_instance.client_config_archive }}/{{ combined_client.cn }}@{{ combined_instance.name }}.ovpn"
+
+- name: "[{{ combined_client.cn }}@{{ combined_instance.name }}] Build client config"
+  template:
+    src: client-conf.j2
+    dest: "/etc/openvpn/{{ combined_instance.dir }}/{{ combined_instance.client_config }}/{{ combined_client.cn }}"

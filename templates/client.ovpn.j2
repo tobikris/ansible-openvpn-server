@@ -1,0 +1,27 @@
+client
+remote {{ combined_instance.ipv4pub }} {{ combined_instance.port }}
+dev {{ combined_client.tun }}
+proto tcp-client
+
+nobind
+persist-key
+persist-tun
+
+cipher AES-256-CBC  
+tls-cipher TLS-DHE-RSA-WITH-AES-256-GCM-SHA384:TLS-DHE-RSA-WITH-AES-256-CBC-SHA256:TLS-DHE-RSA-WITH-AES-128-GCM-SHA256:TLS-DHE-RSA-WITH-AES-128-CBC-SHA256  
+tls-version-min 1.2  
+remote-cert-tls server
+verify-x509-name "{{ combined_instance.name }}" name
+
+comp-lzo
+
+verb 3
+<ca>
+{{ combined_instance.pki.ca_cert }}
+</ca>
+<cert>
+{{ combined_client_cert.content | b64decode }}
+</cert>
+<key>
+{{ combined_client_key.content | b64decode }}
+</key>

@@ -1,0 +1,69 @@
+- name: "[{{ instance.name }}] Combine instance with defaults"
+  set_fact:
+    combined_instance: "{{ openvpn_server_defaults | combine(instance, recursive=true) }}"
+
+- name: "[{{ combined_instance.name }}] Make directory for instance"
+  file:
+    path: "/etc/openvpn/{{ combined_instance.dir }}"
+    state: directory
+  tags: openvpn,config
+
+- name: "[{{ combined_instance.name }}] Generate server.conf"
+  template:
+    src: server.conf.j2
+    dest: "/etc/openvpn/{{ combined_instance.dir }}.conf"
+  notify: Restart openvpn server
+  tags: openvpn,config
+
+- fail:
+    msg: CA password is not available to ansible
+  when: combined_instance.pki.ca_password == ""
+
+- fail:
+    msg: Server password is not available to ansible
+  when: combined_instance.pki.server_password == ""
+
+- name: Init pki
+  command: ../easyrsa/easyrsa init-pki
+  args:
+    chdir: "/etc/openvpn/{{ combined_instance.dir }}/"
+    creates: "/etc/openvpn/{{ combined_instance.dir }}/pki"
+  tags: openvpn,init,config
+
+- name: Build ca
+  include_tasks: build-ca.yml
+  when: combined_instance.pki.mode == "generate" or combined_instance.pki.ca_key == openvpn_server_defaults.pki.ca_key
+
+- name: Copy ca
+  include_tasks: copy-ca.yml
+  when: combined_instance.pki.mode == "copy" and combined_instance.pki.ca_key != openvpn_server_defaults.pki.ca_key
+
+- name: 
+  include_role:
+    name: firewall
+  vars:
+    firewall_opened_ports:
+      - port: "{{ combined_instance.port }}"
+        proto: "{{ (combined_instance.protocol=='udp')|ternary('udp','tcp') }}"
+    firewall_trusted_interfaces:
+      - if: "{{ combined_instance.interface }}"
+
+- name: "[{{ combined_instance.name }}] Make directory for instance client-config"
+  file:
+    path: "/etc/openvpn/{{ combined_instance.dir }}/{{ combined_instance.client_config }}"
+    state: directory
+  tags: openvpn,config
+
+- name: "[{{ combined_instance.name }}] Make directory for instance client config archive"
+  file:
+    path: "/etc/openvpn/{{ combined_instance.dir }}/{{ combined_instance.client_config_archive }}"
+    state: directory
+  tags: openvpn,config
+
+- name: Configure clients
+  include_tasks: client.yml
+  with_items:
+    - "{{ combined_instance.clients }}"
+  loop_control:
+    loop_var: client
+  when: combined_instance.pki.mode == "copy" and combined_instance.pki.ca_key != openvpn_server_defaults.pki.ca_key

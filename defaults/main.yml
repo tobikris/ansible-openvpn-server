@@ -1,0 +1,78 @@
+openvpn_server_instances:
+  - "{{ openvpn_server_defaults }}"
+  
+openvpn_server_defaults:
+  name: VPN Server
+  dir: server
+  ipv4pub: "{{ network_public_ipv4 }}"
+  port: 1194
+  ipv4: 10.0.0.0
+  netmask4: 255.255.0.0
+  ipv6: ""
+  netmask6: /72
+  protocol: tcp-server
+  tun: tun
+  topology: subnet
+  pki:
+    mode: generate  # one of [generate,copy]
+    ca_password: ""
+    ca_cert: |
+      -----BEGIN CERTIFICATE-----
+      -----END CERTIFICATE-----
+    ca_key: |
+      -----BEGIN PRIVATE KEY-----
+      -----END PRIVATE KEY-----
+    server_password: ""
+    server_cert:  |
+      -----BEGIN CERTIFICATE-----
+      -----END CERTIFICATE-----
+    server_key: |
+      -----BEGIN PRIVATE KEY-----
+      -----END PRIVATE KEY-----
+    dhparam: |
+      -----BEGIN DH PARAMETERS-----
+      -----END DH PARAMETERS-----
+  client_config: "client-config"
+  client_config_archive: "client-config-archive"
+  route4: 10.0.0.0 255.255.0.0
+  route6: ""
+  push:
+    routes: []
+      #- 10.1.0.0 255.255.0.0
+    dns: 10.0.0.1
+    redirect_gateway: no
+  client_to_client: yes
+  keepalive:
+    ping: 10
+    ping_restart: 60
+  cipher: AES-256-CBC
+  tls:
+    cipher: TLS-DHE-RSA-WITH-AES-256-GCM-SHA384:TLS-DHE-RSA-WITH-AES-256-CBC-SHA256:TLS-DHE-RSA-WITH-AES-128-GCM-SHA256:TLS-DHE-RSA-WITH-AES-128-CBC-SHA256
+    version_min: 1.2
+    remote_cert: client
+  user: nobody
+  group: nogroup
+  persist_key: yes
+  persist_tun: yes
+  verbosity: 3
+  status: ""
+  log: ""
+  management_telnet_port: ""
+  client_defaults: "{{ openvpn_server_client_defaults }}"
+  clients: [] # list of clients, see defaults below
+
+openvpn_server_client_defaults:
+  cn: client
+  country: "DE"
+  state: ""
+  locality: ""
+  organisation: ""
+  org_unit: ""
+  name: ""
+  email: ""
+  tun: tun
+  ipv4: 10.0.1.1
+  netmask4: 255.255.0.0
+  iroute: []
+    #- 10.0.5.0 255.255.255.0
+  redirect_gateway: no

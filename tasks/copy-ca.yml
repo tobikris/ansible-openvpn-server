@@ -1,0 +1,60 @@
+- name: Create index.txt
+  copy:
+    dest: "/etc/openvpn/{{ combined_instance.dir }}/pki/index.txt"
+    content: ""
+    force: no
+
+- name: Create serial
+  copy:
+    dest: "/etc/openvpn/{{ combined_instance.dir }}/pki/serial"
+    content: "01"
+    force: no
+
+- name: "[{{ combined_instance.name }}] Make directory for issued certificates"
+  file:
+    path: "/etc/openvpn/{{ combined_instance.dir }}/pki/{{ item }}"
+    state: directory
+  with_items:
+    - issued
+    - certs_by_serial
+  tags: openvpn,config
+
+- name: "[{{ combined_instance.name }}] Copy ca.crt"
+  copy:
+    content: "{{ combined_instance.pki.ca_cert }}"
+    dest: "/etc/openvpn/{{ combined_instance.dir }}/pki/ca.crt"
+    backup: yes
+  notify: Restart openvpn server
+  tags: openvpn,config
+
+- name: "[{{ combined_instance.name }}] Copy ca.key"
+  copy:
+    content: "{{ combined_instance.pki.ca_key }}"
+    dest: "/etc/openvpn/{{ combined_instance.dir }}/pki/private/ca.key"
+    backup: yes
+  notify: Restart openvpn server
+  tags: openvpn,config
+
+- name: "[{{ combined_instance.name }}] Copy server.crt"
+  copy:
+    content: "{{ combined_instance.pki.server_cert }}"
+    dest: "/etc/openvpn/{{ combined_instance.dir }}/pki/issued/server.crt"
+    backup: yes
+  notify: Restart openvpn server
+  tags: openvpn,config
+
+- name: "[{{ combined_instance.name }}] Copy server.key"
+  copy:
+    content: "{{ combined_instance.pki.server_key }}"
+    dest: "/etc/openvpn/{{ combined_instance.dir }}/pki/private/server.key"
+    backup: yes
+  notify: Restart openvpn server
+  tags: openvpn,config
+
+- name: "[{{ combined_instance.name }}] Copy dhparam"
+  copy:
+    content: "{{ combined_instance.pki.dhparam }}"
+    dest: "/etc/openvpn/{{ combined_instance.dir }}/pki/dh.pem"
+    backup: yes
+  notify: Restart openvpn server
+  tags: openvpn,config

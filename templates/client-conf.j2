@@ -1,0 +1,9 @@
+{% if combined_client.redirect_gateway is defined and combined_client.redirect_gateway %}
+push "redirect-gateway def1 bypass-dhcp"
+{% endif %}
+{% if combined_client.ipv4 is defined and combined_client.netmask4 is defined %}
+ifconfig-push {{ combined_client.ipv4 }} {{ combined_client.netmask4 }}
+{% endif %}
+{% for iroute in combined_client.iroute %}
+iroute {{ iroute }}
+{% endfor %}

@@ -1,0 +1,27 @@
+- name: Install openvpn, pexpect
+  package:
+    name: "{{ item }}"
+    state: latest
+  with_items: [openvpn,python-pexpect]
+  tags: openvpn,install
+
+- name: Copy easyrsa
+  unarchive:
+    src: EasyRSA-3.0.3.tgz
+    dest: /etc/openvpn
+  tags: openvpn,additional
+
+- name: Create symlink to easyrsa
+  file:
+    src: /etc/openvpn/EasyRSA-3.0.3
+    dest: /etc/openvpn/easyrsa
+    state: link
+  tags: openvpn,additional
+
+- name: Configure instances
+  include_tasks: instance.yml
+  with_items:
+    - "{{ openvpn_server_instances }}"
+  loop_control:
+    loop_var: instance
+  
